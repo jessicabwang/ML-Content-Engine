@@ -1,0 +1,430 @@
+<title>Shufu Content Engine</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #faf7f2;
+    --card: #ffffff;
+    --ink: #2b2320;
+    --muted: #7a7068;
+    --accent: #b5652f;
+    --accent-dark: #8f4f22;
+    --border: #e6ddd2;
+    --own: #2f6e4f;
+    --external: #8a6d3b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.45;
+  }
+  .layout {
+    display: flex;
+    max-width: 1200px;
+    margin: 0 auto;
+    gap: 24px;
+    padding: 20px;
+    align-items: flex-start;
+  }
+  main { flex: 1; min-width: 0; }
+  aside {
+    width: 260px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 20px;
+  }
+  @media (max-width: 860px) {
+    .layout { flex-direction: column; }
+    aside { width: 100%; position: static; }
+  }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  .subtitle { color: var(--muted); margin: 0 0 20px; font-size: 0.9rem; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  textarea, input[type=text] {
+    width: 100%;
+    font-family: inherit;
+    font-size: 1rem;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--ink);
+    resize: vertical;
+  }
+  #query { min-height: 70px; }
+  button {
+    font-family: inherit;
+    font-size: 0.95rem;
+    padding: 10px 18px;
+    border-radius: 8px;
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  button:hover { background: var(--accent-dark); }
+  button:disabled { background: #c9beb1; cursor: default; }
+  button.secondary {
+    background: transparent;
+    color: var(--accent-dark);
+    border: 1px solid var(--accent);
+  }
+  button.secondary:hover { background: #f3e8dc; }
+  .search-row { display: flex; justify-content: flex-end; margin-top: 8px; gap: 8px; }
+  .banner {
+    background: #fff3cd;
+    border: 1px solid #e0c56b;
+    color: #6b5510;
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-size: 0.88rem;
+    white-space: pre-wrap;
+  }
+  .banner.error { background: #fbe4e1; border-color: #e0968b; color: #7a2b1e; }
+  h2 { font-size: 1.05rem; margin: 0 0 12px; }
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+  }
+  .stat-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+  .stat-value { font-size: 1.1rem; font-weight: 600; margin-top: 2px; }
+  .shot-dist span { display: inline-block; margin-right: 10px; }
+  .shot-dist .dominant { font-weight: 700; color: var(--accent-dark); }
+  .result-card { border-left: 4px solid var(--border); }
+  .result-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+  .badge {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    color: #fff;
+    text-transform: uppercase;
+  }
+  .badge.own { background: var(--own); }
+  .badge.external { background: var(--external); }
+  .score { font-weight: 700; color: var(--accent-dark); }
+  .meta-row { font-size: 0.85rem; color: var(--muted); margin-top: 6px; }
+  .field-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; margin-top: 10px; }
+  .field-value { margin: 2px 0 0; }
+  .script-toggle {
+    background: none;
+    border: none;
+    color: var(--accent-dark);
+    font-weight: 600;
+    padding: 0;
+    font-size: 0.85rem;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .script-body {
+    display: none;
+    white-space: pre-wrap;
+    font-size: 0.88rem;
+    background: #f7f2ea;
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-top: 6px;
+  }
+  .script-body.open { display: block; }
+  #promptBox {
+    width: 100%;
+    min-height: 320px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.85rem;
+    white-space: pre-wrap;
+    background: #fbf9f5;
+  }
+  .prompt-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; flex-wrap: wrap; gap: 8px; }
+  .char-count { font-size: 0.8rem; color: var(--muted); }
+  .history-item {
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    border: 1px solid transparent;
+  }
+  .history-item:hover { background: #f3e8dc; border-color: var(--border); }
+  .empty-state { color: var(--muted); font-size: 0.9rem; }
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid #fff;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
+<div class="layout">
+  <main>
+    <h1>Shufu Content Engine</h1>
+    <p class="subtitle">Find your most similar successful posts and build a self-contained prompt to paste into claude.ai.</p>
+
+    <div id="banners"></div>
+
+    <div class="card">
+      <textarea id="query" placeholder="Enter a theme, idea, or prompt&#10;e.g. &quot;photo dump of casual shufu&quot; or &quot;how to prepare shufu&quot;"></textarea>
+      <div class="search-row">
+        <button onclick="reloadData()" class="secondary" id="reloadBtn">Reload data</button>
+        <button onclick="runSearch()" id="searchBtn">Search</button>
+      </div>
+    </div>
+
+    <div id="statsSection"></div>
+    <div id="resultsSection"></div>
+    <div id="promptSection"></div>
+  </main>
+
+  <aside>
+    <div class="card">
+      <h2>Session history</h2>
+      <div id="historyList" class="empty-state">No searches yet.</div>
+    </div>
+  </aside>
+</div>
+
+<script>
+let history = [];
+let currentResponse = null;
+
+async function fetchStatus() {
+  const res = await fetch('/api/status');
+  const data = await res.json();
+  renderBanners(data);
+  return data;
+}
+
+function renderBanners(status) {
+  const el = document.getElementById('banners');
+  el.innerHTML = '';
+  if (status.error) {
+    const div = document.createElement('div');
+    div.className = 'banner error';
+    div.textContent = 'Error: ' + status.error;
+    el.appendChild(div);
+  }
+  if (status.warnings && status.warnings.length) {
+    const div = document.createElement('div');
+    div.className = 'banner';
+    div.textContent = status.warnings.join('\n');
+    el.appendChild(div);
+  }
+}
+
+async function reloadData() {
+  const btn = document.getElementById('reloadBtn');
+  btn.disabled = true;
+  btn.textContent = 'Reloading...';
+  try {
+    await fetch('/api/reload', { method: 'POST' });
+    await fetchStatus();
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Reload data';
+  }
+}
+
+async function runSearch() {
+  const query = document.getElementById('query').value.trim();
+  if (!query) return;
+
+  const status = await fetchStatus();
+  if (!status.loaded) {
+    return;
+  }
+
+  const btn = document.getElementById('searchBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Searching...';
+
+  try {
+    const res = await fetch('/api/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query })
+    });
+    const data = await res.json();
+    currentResponse = data;
+    history.unshift({ query, data });
+    if (history.length > 30) history.pop();
+    renderHistory();
+    renderAll(query, data);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Search';
+  }
+}
+
+function renderHistory() {
+  const el = document.getElementById('historyList');
+  if (!history.length) {
+    el.innerHTML = '<div class="empty-state">No searches yet.</div>';
+    return;
+  }
+  el.innerHTML = '';
+  history.forEach((h, i) => {
+    const div = document.createElement('div');
+    div.className = 'history-item';
+    div.textContent = h.query;
+    div.onclick = () => {
+      currentResponse = h.data;
+      document.getElementById('query').value = h.query;
+      renderAll(h.query, h.data);
+    };
+    el.appendChild(div);
+  });
+}
+
+function renderAll(query, data) {
+  renderStats(data.stats);
+  renderResults(data.results);
+  renderPrompt(data.prompt, data.examples_text);
+}
+
+function renderStats(stats) {
+  const el = document.getElementById('statsSection');
+  if (!stats || !Object.keys(stats).length) {
+    el.innerHTML = '';
+    return;
+  }
+  const shotDist = Object.entries(stats.shot_style_counts)
+    .map(([style, count]) => {
+      const cls = style === stats.dominant_shot_style ? 'dominant' : '';
+      return `<span class="${cls}">${style}: ${count}</span>`;
+    }).join('');
+
+  el.innerHTML = `
+    <div class="card">
+      <h2>Top 10 stats</h2>
+      <div class="stats-grid">
+        <div>
+          <div class="stat-label">Length (median / range)</div>
+          <div class="stat-value">${stats.median_length_seconds.toFixed(0)}s (${stats.min_length_seconds}-${stats.max_length_seconds}s)</div>
+        </div>
+        <div>
+          <div class="stat-label">Shot style distribution</div>
+          <div class="stat-value shot-dist">${shotDist}</div>
+        </div>
+        <div>
+          <div class="stat-label">Views (median / total)</div>
+          <div class="stat-value">${Math.round(stats.median_views).toLocaleString()} / ${stats.total_views.toLocaleString()}</div>
+        </div>
+        <div>
+          <div class="stat-label">Own vs external</div>
+          <div class="stat-value">${stats.own_count} / ${stats.external_count}</div>
+        </div>
+        <div>
+          <div class="stat-label">Median hook length</div>
+          <div class="stat-value">${stats.median_hook_word_count.toFixed(0)} words</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderResults(results) {
+  const el = document.getElementById('resultsSection');
+  if (!results || !results.length) {
+    el.innerHTML = '';
+    return;
+  }
+  const cards = results.map((r, i) => {
+    const p = r.post;
+    const pct = (r.similarity * 100).toFixed(0);
+    const scriptHtml = p.script ? `
+      <button class="script-toggle" onclick="toggleScript(${i})">Show script</button>
+      <div class="script-body" id="script-${i}">${escapeHtml(p.script)}</div>
+    ` : '';
+    const notesHtml = p.notes ? `
+      <div class="field-label">Notes</div>
+      <div class="field-value">${escapeHtml(p.notes)}</div>
+    ` : '';
+    return `
+      <div class="card result-card">
+        <div class="result-header">
+          <span class="score">${pct}% match</span>
+          <span class="badge ${p.source}">${p.source}</span>
+        </div>
+        <div class="meta-row">${escapeHtml(p.creator_handle)} · ${escapeHtml(p.platform)}</div>
+        <div class="field-label">Theme</div>
+        <div class="field-value">${escapeHtml(p.theme)}</div>
+        <div class="field-label">Hook</div>
+        <div class="field-value">${escapeHtml(p.hook)}</div>
+        <div class="field-label">Caption</div>
+        <div class="field-value">${escapeHtml(p.caption)}</div>
+        <div class="meta-row">${p.length_seconds}s · ${p.shot_style} · ${p.views.toLocaleString()} views · ${p.saves.toLocaleString()} saves</div>
+        ${notesHtml}
+        ${scriptHtml}
+      </div>
+    `;
+  }).join('');
+  el.innerHTML = `<h2>Top 10 similar posts</h2>` + cards;
+}
+
+function toggleScript(i) {
+  const el = document.getElementById('script-' + i);
+  el.classList.toggle('open');
+  const btn = el.previousElementSibling;
+  btn.textContent = el.classList.contains('open') ? 'Hide script' : 'Show script';
+}
+
+function renderPrompt(prompt, examplesText) {
+  const el = document.getElementById('promptSection');
+  if (!prompt) {
+    el.innerHTML = '';
+    return;
+  }
+  el.innerHTML = `
+    <div class="card">
+      <h2>Copy-paste prompt</h2>
+      <textarea id="promptBox" readonly>${escapeHtml(prompt)}</textarea>
+      <div class="prompt-actions">
+        <span class="char-count" id="charCount">${prompt.length} characters</span>
+        <div>
+          <button class="secondary" onclick="copyExamples()">Copy examples only</button>
+          <button onclick="copyPrompt()">Copy prompt</button>
+        </div>
+      </div>
+    </div>
+  `;
+  window._examplesText = examplesText;
+}
+
+function copyPrompt() {
+  const box = document.getElementById('promptBox');
+  navigator.clipboard.writeText(box.value).then(() => flashButton(event.target, 'Copied!'));
+}
+
+function copyExamples() {
+  navigator.clipboard.writeText(window._examplesText || '').then(() => flashButton(event.target, 'Copied!'));
+}
+
+function flashButton(btn, text) {
+  const original = btn.textContent;
+  btn.textContent = text;
+  setTimeout(() => { btn.textContent = original; }, 1200);
+}
+
+function escapeHtml(s) {
+  const div = document.createElement('div');
+  div.textContent = s || '';
+  return div.innerHTML;
+}
+
+fetchStatus();
+</script>
