@@ -1,9 +1,7 @@
-# Shufu Content Engine
+# ML Content Engine
 
-A local retrieval and prompt-building tool for short-form video content. Given a
-theme or idea, it finds the 10 most similar posts from `posts.csv`, shows their
-performance stats, and assembles a ready-to-copy prompt for pasting into
-claude.ai. It does not call any LLM API — everything runs locally.
+A local retrieval and prompt-building tool for short-form video content. Finds the 10 most similar posts from `posts.csv`, and shows their
+performance stats. Runs locally.
 
 ## Setup
 
